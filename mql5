@@ -1,0 +1,82 @@
+
+//+------------------------------------------------------------------+
+//|                                                  Paula Bollinger |
+//|                                                  Bands Strategy |
+//|                                    https://forexroboteasy.com    |
+//|                                           Forex Robot Easy Team |
+//+------------------------------------------------------------------+
+
+//--- Indicator initialization function
+int OnInit()
+{
+    //--- create the Bollinger Bands indicator
+    IndicatorShortName('Paula Bollinger Bands');
+    SetIndexStyle(0, DRAW_LINE);
+    SetIndexBuffer(0, ExtMapBuffer);
+    SetIndexLabel(0, 'Bollinger Bands');
+
+    return(INIT_SUCCEEDED);
+}
+
+//--- Indicator calculation function
+int OnCalculate(const int rates_total,
+                const int prev_calculated,
+                const datetime &time[],
+                const double &open[],
+                const double &high[],
+                const double &low[],
+                const double &close[],
+                const long &tick_volume[],
+                const long &volume[],
+                const int &spread[])
+{
+    //--- start calculation from the first uncalculated bar
+    if(prev_calculated > 0)
+        prev_calculated--;
+
+    //--- calculate Bollinger Bands
+    int limit = rates_total - prev_calculated;
+    for(int i = 0; i < limit; i++)
+    {
+        int pos = prev_calculated + i;
+
+        double sum = 0;
+        for(int j = 0; j < BANDS_PERIOD; j++)
+        {
+            sum += close[pos - j];
+        }
+
+        double ma = sum / BANDS_PERIOD;
+        double deviation = 0;
+        for(int j = 0; j < BANDS_PERIOD; j++)
+        {
+            deviation += MathPow(close[pos - j] - ma, 2);
+        }
+        deviation = MathSqrt(deviation / BANDS_PERIOD);
+
+        double upper_band = ma + BANDS_DEVIATION * deviation;
+        double lower_band = ma - BANDS_DEVIATION * deviation;
+
+        ExtMapBuffer[pos] = close[pos];
+
+        //--- check for trade entry
+        if(close[pos - 1] > upper_band && close[pos] < upper_band)
+        {
+            //--- check if the subsequent candle closes inside the bands
+            if(close[pos + 1] < upper_band && close[pos + 1] > lower_band)
+            {
+                //--- execute trade
+                ExecuteTrade();
+            }
+        }
+    }
+
+    //--- return value of prev_calculated for next call
+    return(rates_total);
+}
+
+//--- function to execute trade
+void ExecuteTrade()
+{
+    //--- implement trade execution logic here
+}
